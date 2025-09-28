@@ -1,0 +1,182 @@
+@startuml
+title ER Diagram - WarmHouse Domain Model (Full)
+
+entity "User" as User {
+  *id : uuid
+  --
+  first_name : string
+  last_name : string
+  email : string
+  phone : string
+  is_active : bool
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "House" as House {
+  *id : uuid
+  --
+  user_id : uuid
+  address : string
+  description : string
+  is_active : bool
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "Room" as Room {
+  *id : uuid
+  --
+  house_id : uuid
+  name : string
+  floor_number : int
+  room_type_id : int
+}
+
+entity "RoomType" as RoomType {
+  *id : int
+  --
+  name : string
+}
+
+entity "Device" as Device {
+  *id : uuid
+  --
+  serial_number : string
+  connection_string : string
+  description : string
+  device_type_id : int
+  status : int
+  room_id : uuid
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "DeviceType" as DeviceType {
+  *id : int
+  --
+  parent_id : int
+  is_group : bool
+  name : string
+}
+
+entity "Telemetry" as Telemetry {
+  *id : uuid
+  --
+  device_id : uuid
+  created_at : datetime
+  temperature : float?
+  humidity : float?
+  power_consumption : float?
+  motion_detected : bool?
+  light_level : float?
+  custom_payload : jsonb
+}
+
+entity "TariffPlan" as TariffPlan {
+  *id : uuid
+  --
+  name : string
+  description : string
+  device_count : int
+  price : float
+  currency : string
+  billing_period : string <<enum: monthly, yearly>>
+  is_active : bool
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "Subscription" as Subscription {
+  *id : uuid
+  --
+  user_id : uuid
+  tariff_plan_id : uuid
+  start_date : datetime
+  end_date : datetime
+  auto_renewal : bool
+  status : string <<enum: active, canceled, expired, suspended>>
+}
+
+entity "Invoice" as Invoice {
+  *id : uuid
+  --
+  user_id : uuid
+  tariff_plan_id : uuid
+  sum : float
+  status : string <<enum: pending, paid, canceled, overdue>>
+  created_at : datetime
+  pay_before : datetime
+  paid_at : datetime?
+}
+
+entity "AutomationScenario" as AutomationScenario {
+  *id : uuid
+  --
+  user_id : uuid
+  name : string
+  description : string
+  is_active : bool
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "AutomationStep" as AutomationStep {
+  *id : uuid
+  --
+  scenario_id : uuid
+  name : string
+  action_type : string <<enum: send_command, wait, notify>>
+  device_id : uuid?
+  command : string?
+  timeout_seconds : int
+  order : int
+  stop_on_fail : bool
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "NotificationType" as NotificationType {
+  *id : int
+  --
+  name : string
+  description : string
+}
+
+entity "NotificationMessage" as NotificationMessage {
+  *id : uuid
+  --
+  recipient_id : uuid
+  created_at : datetime
+  send_at : datetime
+  sent_at : datetime?
+  delivered_at : datetime?
+  title : string
+  body : text
+  message_type_id : int
+  channel : string <<enum: email, sms, push>>
+  status : string <<enum: pending, sent, delivered, failed>>
+  email : string?
+  phone : string?
+}
+
+' Relationships
+User ||--o{ House : owns
+House ||--o{ Room : contains
+RoomType ||--o{ Room : categorizes
+Room ||--o{ Device : has
+DeviceType ||--o{ Device : type_of
+Device ||--o{ Telemetry : produces
+
+User ||--o{ Subscription : subscribes
+TariffPlan ||--o{ Subscription : available_for
+User ||--o{ Invoice : billed
+TariffPlan ||--o{ Invoice : reference_to
+
+User ||--o{ AutomationScenario : owns
+AutomationScenario ||--o{ AutomationStep : consists_of
+
+NotificationType ||--o{ NotificationMessage : type_of
+User ||--o{ NotificationMessage : receives
+
+@enduml

@@ -1,0 +1,93 @@
+openapi: 3.0.3
+info:
+  title: Telemetry Service API
+  version: 1.0.0
+paths:
+  /telemetry:
+    get:
+      summary: Получить телеметрию устройств
+      parameters:
+        - in: query
+          name: device_id
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по конкретному устройству
+        - in: query
+          name: from
+          schema:
+            type: string
+            format: date-time
+          description: Начало диапазона времени
+        - in: query
+          name: to
+          schema:
+            type: string
+            format: date-time
+          description: Конец диапазона времени
+      responses:
+        '200':
+          description: Телеметрия получена
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TelemetryRecord'
+    post:
+      summary: Сохранить новую телеметрию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/TelemetryRecordCreate'
+      responses:
+        '201':
+          description: Телеметрия сохранена
+  /telemetry/{id}:
+    get:
+      summary: Получить запись телеметрии по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Запись найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelemetryRecord'
+        '404':
+          description: Запись не найдена
+components:
+  schemas:
+    TelemetryRecord:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        device_id: { type: string, format: uuid }
+        metrics_names:
+          type: array
+          items: { type: string }
+        metrics_values:
+          type: array
+          items: { type: number }
+        created_at: { type: string, format: date-time }
+    TelemetryRecordCreate:
+      type: object
+      required: [device_id, metrics_names, metrics_values]
+      properties:
+        device_id: { type: string, format: uuid }
+        metrics_names:
+          type: array
+          items: { type: string }
+        metrics_values:
+          type: array
+          items: { type: number }

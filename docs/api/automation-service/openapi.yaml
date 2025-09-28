@@ -1,0 +1,270 @@
+openapi: 3.0.3
+info:
+  title: Automation Service API
+  version: 1.0.0
+  description: Сценарии автоматизации и управление шагами сценариев.
+servers:
+  - url: https://api.warmhouse.local/automation
+paths:
+  /scenarios:
+    get:
+      summary: Получить сценарии пользователя
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список сценариев
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AutomationScenario'
+    post:
+      summary: Создать сценарий автоматизации
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationScenarioCreate'
+            examples:
+              example-1:
+                value:
+                  user_id: "11111111-1111-1111-1111-111111111111"
+                  name: "Night mode"
+      responses:
+        '201':
+          description: Сценарий создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationScenario'
+  /scenarios/{id}:
+    get:
+      summary: Получить сценарий по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Сценарий
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutomationScenario'
+        '404':
+          description: Сценарий не найден
+    patch:
+      summary: Обновить сценарий
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationScenarioUpdate'
+      responses:
+        '200':
+          description: Обновлено
+  /scenarios/{id}/steps:
+    get:
+      summary: Получить шаги сценария
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список шагов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AutomationStep'
+    post:
+      summary: Добавить шаг в сценарий
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationStepCreate'
+      responses:
+        '201':
+          description: Шаг добавлен
+  /scenarios/{id}/steps/{step_id}:
+    patch:
+      summary: Обновить шаг сценария
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: step_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutomationStepUpdate'
+      responses:
+        '200':
+          description: Шаг обновлён
+  /scenarios/{id}/execute:
+    post:
+      summary: Запустить сценарий
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Сценарий запущен
+components:
+  schemas:
+    AutomationScenario:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/AutomationStep'
+    AutomationScenarioCreate:
+      type: object
+      required:
+        - user_id
+        - name
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+    AutomationScenarioUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        is_active:
+          type: boolean
+    AutomationStep:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scenario_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        device_id:
+          type: string
+          format: uuid
+        command:
+          type: string
+        timeout_seconds:
+          type: integer
+        order:
+          type: integer
+        stop_scenario_execution_when_step_failed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AutomationStepCreate:
+      type: object
+      required:
+        - name
+        - order
+      properties:
+        name:
+          type: string
+        device_id:
+          type: string
+          format: uuid
+        command:
+          type: string
+        timeout_seconds:
+          type: integer
+        order:
+          type: integer
+        stop_scenario_execution_when_step_failed:
+          type: boolean
+    AutomationStepUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        device_id:
+          type: string
+          format: uuid
+        command:
+          type: string
+        timeout_seconds:
+          type: integer
+        order:
+          type: integer
+        stop_scenario_execution_when_step_failed:
+          type: boolean

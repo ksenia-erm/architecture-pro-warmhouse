@@ -1,0 +1,27 @@
+```puml
+@startuml
+title WarmHouse - Device Management Service Component Diagram
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container(deviceService, "Device Management Service", "Go", "Управление устройствами: настройка, привязка к домам, опрос состояния") {
+
+  Component(deviceAPI, "Device API", "REST/gRPC", "Обрабатывает команды от API Gateway")
+  Component(deviceRegistry, "Device Registry", "Go package", "Регистрация устройств, привязка к пользователям")
+  Component(statePoller, "State Poller", "Worker", "Периодически опрашивает устройства, синхронизирует состояние")
+  Component(protocolAdapter, "Protocol Adapter", "MQTT/HTTP Adapter", "Инкапсулирует работу с протоколами IoT")
+  Component(deviceRepository, "Device Repository", "Go package", "CRUD по устройствам")
+  Component(eventsPublisher, "Device Events Publisher", "Kafka producer", "События: устройство добавлено/удалено, состояние изменено")
+  Component(eventsConsumer, "Device Events Consumer", "Kafka consumer", "Реакция на события Automation Service (выполнение команд)")
+
+  Rel(deviceAPI, deviceRegistry, "Регистрация/удаление устройства")
+  Rel(deviceAPI, deviceRepository, "CRUD операции")
+  Rel(statePoller, deviceRepository, "Читает список устройств")
+  Rel(statePoller, protocolAdapter, "Опрашивает устройства")
+  Rel(protocolAdapter, deviceRepository, "Обновляет состояние устройства")
+  Rel(protocolAdapter, eventsPublisher, "Публикует события изменения состояния")
+  Rel(eventsConsumer, protocolAdapter, "Отправляет команды на устройства")
+  Rel(deviceRepository, deviceServiceDB, "read/write", "PostgreSQL")
+}
+@enduml
+```

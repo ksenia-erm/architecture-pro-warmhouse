@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: Tariff Service API
+  version: 1.0.0
+paths:
+  /tariffs:
+    get:
+      summary: Получить список тарифных планов
+      responses:
+        '200':
+          description: Список тарифов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TariffPlan'
+    post:
+      summary: Создать новый тарифный план
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffPlanCreate'
+      responses:
+        '201':
+          description: Тарифный план создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffPlan'
+  /tariffs/{id}:
+    get:
+      summary: Получить тарифный план
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Тариф найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffPlan'
+        '404':
+          description: Тариф не найден
+    patch:
+      summary: Обновить тарифный план
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffPlanUpdate'
+      responses:
+        '200':
+          description: Тариф обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffPlan'
+components:
+  schemas:
+    TariffPlan:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        device_count: { type: integer }
+        price: { type: number, format: float }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    TariffPlanCreate:
+      type: object
+      required: [name, device_count, price]
+      properties:
+        name: { type: string }
+        device_count: { type: integer }
+        price: { type: number, format: float }
+        is_active: { type: boolean }
+    TariffPlanUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        device_count: { type: integer }
+        price: { type: number, format: float }
+        is_active: { type: boolean }

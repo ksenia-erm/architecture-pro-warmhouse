@@ -35,6 +35,28 @@ func NewTemperatureService(baseURL string) *TemperatureService {
 	}
 }
 
+// GetAggregatedData fetches aggregated data from API Gateway
+func (s *TemperatureService) GetAggregatedData(location, deviceID string) (map[string]interface{}, error) {
+	url := fmt.Sprintf("%s/aggregate/telemetry?location=%s&device_id=%s", s.BaseURL, location, deviceID)
+
+	resp, err := s.HTTPClient.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching aggregated data: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var data map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, fmt.Errorf("error decoding aggregated data: %w", err)
+	}
+
+	return data, nil
+}
+
 // GetTemperature fetches temperature data for a specific location
 func (s *TemperatureService) GetTemperature(location string) (*TemperatureResponse, error) {
 	url := fmt.Sprintf("%s/temperature?location=%s", s.BaseURL, location)

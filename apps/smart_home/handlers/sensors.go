@@ -18,13 +18,17 @@ import (
 type SensorHandler struct {
 	DB                 *db.DB
 	TemperatureService *services.TemperatureService
+	DeviceService      *services.DeviceService
+	TelemetryService   *services.TelemetryService
 }
 
 // NewSensorHandler creates a new SensorHandler
-func NewSensorHandler(db *db.DB, temperatureService *services.TemperatureService) *SensorHandler {
+func NewSensorHandler(db *db.DB, temperatureService *services.TemperatureService, deviceService *services.DeviceService, telemetryService *services.TelemetryService) *SensorHandler {
 	return &SensorHandler{
 		DB:                 db,
 		TemperatureService: temperatureService,
+		DeviceService:      deviceService,
+		TelemetryService:   telemetryService,
 	}
 }
 
@@ -39,6 +43,11 @@ func (h *SensorHandler) RegisterRoutes(router *gin.RouterGroup) {
 		sensors.DELETE("/:id", h.DeleteSensor)
 		sensors.PATCH("/:id/value", h.UpdateSensorValue)
 		sensors.GET("/temperature/:location", h.GetTemperatureByLocation)
+		sensors.GET("/devices", h.GetDevices)
+		sensors.POST("/devices", h.CreateDevice)
+		sensors.POST("/devices/:id/commands", h.SendDeviceCommand)
+		sensors.GET("/telemetry", h.GetTelemetry)
+		sensors.POST("/telemetry", h.CreateTelemetry)
 	}
 }
 
@@ -210,4 +219,90 @@ func (h *SensorHandler) UpdateSensorValue(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor value updated successfully"})
+}
+
+// GetDevices handles GET /api/v1/sensors/devices
+func (h *SensorHandler) GetDevices(c *gin.Context) {
+	houseID := c.Query("house_id")
+	status := c.Query("status")
+
+	devices, err := h.DeviceService.GetDevices(houseID, status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, devices)
+}
+
+// CreateDevice handles POST /api/v1/sensors/devices
+func (h *SensorHandler) CreateDevice(c *gin.Context) {
+	var deviceCreate services.DeviceCreate
+	if err := c.ShouldBindJSON(&deviceCreate); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	device, err := h.DeviceService.CreateDevice(deviceCreate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, device)
+}
+
+// SendDeviceCommand handles POST /api/v1/sensors/devices/:id/commands
+func (h *SensorHandler) SendDeviceCommand(c *gin.Context) {
+	deviceID := c.Param("id")
+	if deviceID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Device ID is required"})
+		return
+	}
+
+	var command services.DeviceCommand
+	if err := c.ShouldBindJSON(&command); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.DeviceService.SendCommand(deviceID, command)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"message": "Command sent successfully"})
+}
+
+// GetTelemetry handles GET /api/v1/sensors/telemetry
+func (h *SensorHandler) GetTelemetry(c *gin.Context) {
+	deviceID := c.Query("device_id")
+	from := c.Query("from")
+	to := c.Query("to")
+
+	records, err := h.TelemetryService.GetTelemetryRecords(deviceID, from, to)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, records)
+}
+
+// CreateTelemetry handles POST /api/v1/sensors/telemetry
+func (h *SensorHandler) CreateTelemetry(c *gin.Context) {
+	var recordCreate services.TelemetryRecordCreate
+	if err := c.ShouldBindJSON(&recordCreate); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	record, err := h.TelemetryService.CreateTelemetryRecord(recordCreate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, record)
 }

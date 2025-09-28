@@ -1,0 +1,24 @@
+```puml
+@startuml
+title WarmHouse - Automation Service Component Diagram
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container(automationService, "Automation Service", "Go", "Пользовательские сценарии и расписания управления устройствами") {
+
+  Component(automationAPI, "Automation API", "REST/gRPC", "CRUD для сценариев, расписаний")
+  Component(ruleEngine, "Rule Engine", "Go package", "Исполняет сценарии и правила")
+  Component(scheduleManager, "Schedule Manager", "Worker", "Периодически проверяет расписания, триггерит Rule Engine")
+  Component(automationRepository, "Automation Repository", "Go package", "CRUD по сценариям и правилам")
+  Component(eventConsumer, "Telemetry/Device Event Consumer", "Kafka consumer", "Получает события устройств и передаёт их Rule Engine")
+  Component(eventPublisher, "Automation Events Publisher", "Kafka producer", "Публикует команды для Device Service")
+
+  Rel(automationAPI, automationRepository, "Создание/обновление сценариев")
+  Rel(scheduleManager, automationRepository, "Чтение сценариев")
+  Rel(scheduleManager, ruleEngine, "Запуск сценариев")
+  Rel(eventConsumer, ruleEngine, "Передаёт события")
+  Rel(ruleEngine, eventPublisher, "Генерация команд")
+  Rel(automationRepository, automationServiceDB, "read/write", "PostgreSQL")
+}
+@enduml
+```

@@ -1,0 +1,22 @@
+```puml
+@startuml
+title WarmHouse - User Service Component Diagram
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Container(userService, "User Service", "Go", "Управление пользователями, профили, подписки на услуги системы, права доступа") {
+
+  Component(userAPI, "User API", "REST/gRPC", "Обрабатывает запросы API Gateway, проводит валидацию, маппинг DTO → доменные объекты")
+  Component(authManager, "Auth Manager", "Go package", "Регистрация, вход, refresh токены, управление сессиями")
+  Component(userRepository, "User Repository", "Go package", "CRUD по пользователям, ролям, подпискам")
+  Component(subscriptionManager, "Subscription Manager", "Go package", "Проверка, продление и изменение подписок")
+  Component(domainEventsPublisher, "Domain Events Publisher", "Kafka producer", "Публикует события: user.created, user.updated")
+
+  Rel(userAPI, authManager, "Вызовы для аутентификации")
+  Rel(userAPI, userRepository, "Чтение/запись пользователей")
+  Rel(userAPI, subscriptionManager, "Проверка подписок")
+  Rel(subscriptionManager, domainEventsPublisher, "Публикация событий")
+  Rel(userRepository, userServiceDB, "read/write", "PostgreSQL")
+}
+@enduml
+```

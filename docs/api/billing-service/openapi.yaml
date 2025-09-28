@@ -1,0 +1,248 @@
+openapi: 3.0.3
+info:
+  title: Billing Service API
+  version: 1.0.0
+  description: Тарифы, подписки и счета.
+servers:
+  - url: https://api.warmhouse.local/billing
+paths:
+  /tariff-plans:
+    get:
+      summary: Получить тарифные планы
+      responses:
+        '200':
+          description: Список тарифов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TariffPlan'
+    post:
+      summary: Создать тарифный план
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffPlanCreate'
+      responses:
+        '201':
+          description: Тариф создан
+  /tariff-plans/{id}:
+    get:
+      summary: Получить тариф по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Тариф
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffPlan'
+        '404':
+          description: Тариф не найден
+    patch:
+      summary: Обновить тариф
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffPlanCreate'
+      responses:
+        '200':
+          description: Обновлён
+  /subscriptions:
+    post:
+      summary: Оформить подписку
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionCreate'
+            examples:
+              example-1:
+                value:
+                  user_id: "11111111-1111-1111-1111-111111111111"
+                  tariff_plan_id: "t-1"
+                  start_date: "2025-09-01T00:00:00Z"
+      responses:
+        '201':
+          description: Подписка создана
+    get:
+      summary: Получить подписки (фильтр по user_id)
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список подписок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscription'
+  /invoices:
+    post:
+      summary: Создать счёт
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceCreate'
+      responses:
+        '201':
+          description: Счёт создан
+    get:
+      summary: Получить счета пользователя
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список счетов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+components:
+  schemas:
+    TariffPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        device_count:
+          type: integer
+        price:
+          type: number
+          format: float
+        currency:
+          type: string
+        billing_period:
+          type: string
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TariffPlanCreate:
+      type: object
+      required:
+        - name
+        - price
+      properties:
+        name:
+          type: string
+        device_count:
+          type: integer
+        price:
+          type: number
+          format: float
+        currency:
+          type: string
+        billing_period:
+          type: string
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        tariff_plan_id:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        status:
+          type: string
+    SubscriptionCreate:
+      type: object
+      required:
+        - user_id
+        - tariff_plan_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        tariff_plan_id:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        auto_renewal:
+          type: boolean
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        tariff_plan_id:
+          type: string
+        sum:
+          type: number
+          format: float
+        status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        pay_before:
+          type: string
+          format: date-time
+    InvoiceCreate:
+      type: object
+      required:
+        - tariff_plan_id
+        - sum
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        tariff_plan_id:
+          type: string
+        sum:
+          type: number
+          format: float
+        pay_before:
+          type: string
+          format: date-time

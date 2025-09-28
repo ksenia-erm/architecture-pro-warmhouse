@@ -1,0 +1,85 @@
+```puml
+@startuml
+title User Service - Code Level Diagram
+
+!theme plain
+
+package "models" {
+  class User {
+    +ID: string
+    +Email: string
+    +PasswordHash: string
+    +Role: string
+    +Subscription: Subscription
+  }
+
+  class Subscription {
+    +ID: string
+    +UserID: string
+    +Plan: string
+    +ExpiresAt: time.Time
+    +IsActive(): bool
+  }
+}
+
+package "repository" {
+  interface UserRepository {
+    +GetByID(id string): (*User, error)
+    +GetByEmail(email string): (*User, error)
+    +Create(u *User): error
+    +Update(u *User): error
+  }
+
+  class PostgresUserRepository {
+    -db: *sql.DB
+    +GetByID(id string): (*User, error)
+    +GetByEmail(email string): (*User, error)
+    +Create(u *User): error
+    +Update(u *User): error
+  }
+}
+
+package "service" {
+  class AuthService {
+    -repo: UserRepository
+    +Register(email, password string): (*User, error)
+    +Login(email, password string): (token string, error)
+    +RefreshToken(refreshToken string): (newToken string, error)
+  }
+
+  class SubscriptionService {
+    -repo: UserRepository
+    +CheckActive(userID string): (bool, error)
+    +Extend(userID string, plan string): error
+  }
+
+  class EventPublisher {
+    -kafkaProducer: *kafka.Writer
+    +PublishUserCreated(user *User): error
+    +PublishUserUpdated(user *User): error
+  }
+}
+
+package "handlers" {
+  class UserHandler {
+    -authService: AuthService
+    -subscriptionService: SubscriptionService
+    -publisher: EventPublisher
+    +Register(ctx echo.Context): error
+    +Login(ctx echo.Context): error
+    +GetProfile(ctx echo.Context): error
+    +UpdateProfile(ctx echo.Context): error
+  }
+}
+
+UserRepository <|.. PostgresUserRepository
+PostgresUserRepository --> User
+AuthService --> UserRepository
+SubscriptionService --> UserRepository
+UserHandler --> AuthService
+UserHandler --> SubscriptionService
+UserHandler --> EventPublisher
+EventPublisher --> User
+User --> Subscription
+@enduml
+```

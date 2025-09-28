@@ -27,10 +27,20 @@ func main() {
 
 	log.Println("Connected to database successfully")
 
-	// Initialize temperature service
+	// Initialize services
 	temperatureAPIURL := getEnv("TEMPERATURE_API_URL", "http://temperature-api:8081")
 	temperatureService := services.NewTemperatureService(temperatureAPIURL)
 	log.Printf("Temperature service initialized with API URL: %s\n", temperatureAPIURL)
+
+	// Initialize device service
+	deviceAPIURL := getEnv("DEVICE_API_URL", "http://device-service:8083")
+	deviceService := services.NewDeviceService(deviceAPIURL)
+	log.Printf("Device service initialized with API URL: %s\n", deviceAPIURL)
+
+	// Initialize telemetry service
+	telemetryAPIURL := getEnv("TELEMETRY_API_URL", "http://telemetry-service:8082")
+	telemetryService := services.NewTelemetryService(telemetryAPIURL)
+	log.Printf("Telemetry service initialized with API URL: %s\n", telemetryAPIURL)
 
 	// Initialize router
 	router := gin.Default()
@@ -46,7 +56,7 @@ func main() {
 	apiRoutes := router.Group("/api/v1")
 
 	// Register sensor routes
-	sensorHandler := handlers.NewSensorHandler(database, temperatureService)
+	sensorHandler := handlers.NewSensorHandler(database, temperatureService, deviceService, telemetryService)
 	sensorHandler.RegisterRoutes(apiRoutes)
 
 	// Start server

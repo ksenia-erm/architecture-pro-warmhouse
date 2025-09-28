@@ -1,0 +1,209 @@
+openapi: 3.0.3
+info:
+  title: Device Management Service API
+  version: 1.0.0
+  description: Управление устройствами, регистрация, обновление статусов, отправка команд.
+servers:
+  - url: https://api.warmhouse.local/device
+paths:
+  /devices:
+    get:
+      summary: Получить список устройств
+      parameters:
+        - in: query
+          name: house_id
+          schema:
+            type: string
+            format: uuid
+          description: Фильтр по дому
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Фильтр по статусу (online/offline)
+      responses:
+        '200':
+          description: Список устройств
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+    post:
+      summary: Зарегистрировать новое устройство
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCreate'
+            examples:
+              example-1:
+                value:
+                  serial_number: "SN-1001"
+                  connection_string: "mqtt://broker:1883"
+                  device_type_id: 1
+                  room_id: "r-111"
+      responses:
+        '201':
+          description: Устройство зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+  /devices/{id}:
+    get:
+      summary: Получить устройство по ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Устройство
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        '404':
+          description: Устройство не найдено
+    patch:
+      summary: Обновить устройство
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceUpdate'
+      responses:
+        '200':
+          description: Обновлено
+  /devices/{id}/status:
+    patch:
+      summary: Обновить статус устройства
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [online, offline]
+            examples:
+              offline:
+                value:
+                  status: "offline"
+      responses:
+        '200':
+          description: Статус обновлён
+  /devices/{id}/commands:
+    post:
+      summary: Отправить команду на устройство
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCommand'
+            examples:
+              turn-on:
+                value:
+                  command: "turn_on"
+                  parameters:
+                    brightness: 80
+      responses:
+        '202':
+          description: Команда принята к исполнению
+components:
+  schemas:
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serial_number:
+          type: string
+        connection_string:
+          type: string
+        description:
+          type: string
+        device_type_id:
+          type: integer
+        status:
+          type: string
+        room_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    DeviceCreate:
+      type: object
+      required:
+        - serial_number
+        - device_type_id
+      properties:
+        serial_number:
+          type: string
+        connection_string:
+          type: string
+        device_type_id:
+          type: integer
+        description:
+          type: string
+        room_id:
+          type: string
+          format: uuid
+    DeviceUpdate:
+      type: object
+      properties:
+        connection_string:
+          type: string
+        description:
+          type: string
+        room_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+    DeviceCommand:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true

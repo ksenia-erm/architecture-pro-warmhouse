@@ -1,0 +1,90 @@
+```puml
+@startuml
+title WarmHouse Container Diagram (To-Be)
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Context.puml
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+
+Person(user, "WebUI/MobileApp User", "Управляет устройствами, настраивает сценарии автоматизации, просматривает информацию о датчиках")
+Person(serviceEngineer, "Service Engineer", "Помогает в установке датчиков, дает консультации по технической части")
+Person(operator, "Support", "Осуществляет поддержку пользователей")
+
+System_Boundary(saasPlatform, "WarmHouse SaaS Platform") {
+  Container(webApp, "Web UI", "React/Vue.js", "Web-интерфейс для пользователей системы")
+  Container(mobileApp, "Mobile App", "iOS/Android", "Мобильный клиент для пользователей системы")
+  Container(opsPortal, "Operator Portal", "React/Vue.js", "Web-интерфейс для сотрудников службы поддержки: мониторинг, поддержка пользователей, решение инцидентов")
+
+  Container(apiGateway, "API Gateway / BFF", "HTTP/REST + gRPC", "Единая точка входа: аутентификация, маршрутизация запросов, rate-limit, BFF, кэши, логирование и пр.")
+
+  Container(userService, "User Service", "Go", "Управление пользователями, профили, подписки на услуги системы, права доступа")
+  ContainerDb(userServiceDB, "User Service Database", "PostgreSQL", "Информация о пользователях, их правах, подписках")
+
+  Container(deviceService, "Device Management Service", "Go", "Управление устройствами: настройка, привязка к домам, опрос состояния")
+  ContainerDb(deviceServiceDB, "Device Management Service Database", "PostgreSQL", "Информация об устройствах")
+
+  Container(billingService, "Billing Service", "Go", "Тарифные планы, подписки, выставление счетов")
+  ContainerDb(billingServiceDB, "Billing Service Database", "PostgreSQL", "Информация о тарифных планах, подписках, счетах")
+
+  Container(telemetryService, "Telemetry Service", "Go", "Сбор и обработка телеметрии устройств")
+  ContainerDb(telemetryDB, "Telemetry Database", "ClickHouse", "Хранение данных телеметрии")
+  ContainerDb(objectStorage, "Object Storage", "S3", "Raw-логи, медиа-файлы")
+
+  Container(automationService, "Automation Service", "Go", "Пользовательские сценарии и расписания управления устройствами")
+  ContainerDb(automationServiceDB, "Automation Service Database", "PostgreSQL", "Хранение пользовательских сценариев и расписаний")
+
+  Container(notificationService, "Notification Service", "Go", "Email/SMS/push")
+
+  Container(eventBus, "Event Bus / Message Broker", "Kafka", "События микросервисов")
+}
+
+System_Ext(sensors, "Sensors", "Датчики температуры, освещения, камеры, управление воротами")
+System_Ext(partnersDevices, "Partners Devices", "Устройства партнеров со стандартными протоколами подключения")
+System_Ext(extPaymentSystem, "Payment System", "Внешняя платежная система")
+
+Rel(user, webApp, "HTTPS")
+Rel(user, mobileApp, "HTTPS")
+
+Rel(operator, opsPortal, "HTTPS")
+Rel(serviceEngineer, opsPortal, "Видит установленные устройства, помогает при их настройке")
+
+Rel(webApp, apiGateway, "HTTPS / REST")
+Rel(mobileApp, apiGateway, "HTTPS / REST")
+Rel(opsPortal, apiGateway, "HTTPS / REST")
+
+Rel(apiGateway, userService, "Профили пользователей, подписки", "HTTP/REST")
+Rel(apiGateway, deviceService, "Управление устройствами", "HTTP/REST")
+Rel(apiGateway, billingService, "Биллинг", "HTTP/REST")
+Rel(apiGateway, telemetryService, "Телеметрия устройств", "HTTP/REST")
+Rel(apiGateway, automationService, "Автоматизация устройств", "HTTP/REST")
+Rel(apiGateway, notificationService, "Запрашивает список уведомлений, статус доставки", "HTTPS / REST")
+
+Rel(userService, userServiceDB, "read/write", "PostgreSQL")
+Rel(deviceService, deviceServiceDB, "read/write", "PostgreSQL")
+Rel(automationService, automationServiceDB, "read/write", "PostgreSQL")
+Rel(billingService, billingServiceDB, "read/write", "PostgreSQL")
+Rel(telemetryService, telemetryDB, "read/write", "ClickHouse")
+Rel(telemetryService, objectStorage, "Сохранение raw-логов, медиа-файлов")
+
+Rel(userService, eventBus, "Kafka producer", "Публикует события создания/удаления пользователей")
+Rel(telemetryService, eventBus, "Kafka producer", "Публикует события после обработки данных телеметрии устройств")
+Rel(automationService, eventBus, "Kafka producer", "События сценариев управления устройствами")
+Rel(notificationService, eventBus, "Kafka consumer", "Сообщения с данными для отправки уведомлений пользователям")
+Rel(billingService, eventBus, "Kafka producer", "События обработки платежей")
+Rel(deviceService, eventBus, "Kafka consumer", "События автоматизации устройств")
+Rel(deviceService, eventBus, "Kafka producer", "События добавления/удаления устройств, изменения состояния устройств")
+
+Rel(deviceService, sensors, "Управление устройствами, получение данных", "MQTT/HTTP")
+Rel(deviceService, partnersDevices, "Управление устройствами, получение данных", "MQTT/HTTP")
+
+Rel(telemetryService, sensors, "Получение телеметрии", "MQTT/CoAP/DDS")
+Rel(telemetryService, partnersDevices, "Получение телеметрии", "MQTT/CoAP/DDS")
+
+Rel(billingService, userService, "Пользовательские подписки, тарифные планы", "gRPC")
+Rel(billingService, extPaymentSystem, "Обработка платежей", "HTTPS / REST")
+
+Rel(notificationService, mobileApp, "Push-уведомления", "FCM/APNs")
+
+@enduml
+```

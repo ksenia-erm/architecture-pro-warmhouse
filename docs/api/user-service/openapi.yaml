@@ -1,0 +1,236 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  version: 1.0.0
+  description: API для управления пользователями, домами и устройствами (включая списки домов и устройств с их статусами).
+servers:
+  - url: https://api.warmhouse.local/user
+paths:
+  /users:
+    get:
+      summary: Получить список пользователей
+      description: Возвращает пользователей с подсчитанным количеством устройств.
+      parameters:
+        - in: query
+          name: is_active
+          schema:
+            type: boolean
+          description: Фильтр по активности пользователя
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 50
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserSummary'
+    post:
+      summary: Создать нового пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+            examples:
+              example-1:
+                value:
+                  first_name: "Мария"
+                  last_name: "Иванова"
+                  email: "maria@example.com"
+                  phone: "+79161234567"
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+  /users/{id}:
+    get:
+      summary: Получить данные пользователя
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+              examples:
+                example-1:
+                  value:
+                    id: "11111111-1111-1111-1111-111111111111"
+                    first_name: "Мария"
+                    last_name: "Иванова"
+                    email: "maria@example.com"
+                    phone: "+79161234567"
+                    is_active: true
+                    houses:
+                      - id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+                        address: "ул. Ленина, 1"
+                        rooms:
+                          - id: "r-111"
+                            name: "Кухня"
+                            floor_number: 1
+                            devices:
+                              - id: "d-1"
+                                serial_number: "SN-001"
+                                status: "online"
+        '404':
+          description: Пользователь не найден
+    patch:
+      summary: Обновить данные пользователя
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+            examples:
+              update-phone:
+                value:
+                  phone: "+79160001122"
+      responses:
+        '200':
+          description: Данные обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDetail'
+        '400':
+          description: Неверные данные
+components:
+  schemas:
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+        device_count:
+          type: integer
+    UserCreate:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - email
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+    UserUpdate:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        is_active:
+          type: boolean
+    UserDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        is_active:
+          type: boolean
+        houses:
+          type: array
+          items:
+            $ref: '#/components/schemas/House'
+    House:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        address:
+          type: string
+        description:
+          type: string
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        floor_number:
+          type: integer
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        serial_number:
+          type: string
+        status:
+          type: string

@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: Notification Service API
+  version: 1.0.0
+  description: Создание и отправка уведомлений, история и статус доставки.
+servers:
+  - url: https://api.warmhouse.local/notification
+paths:
+  /notifications:
+    get:
+      summary: Получить уведомления пользователя
+      parameters:
+        - in: query
+          name: user_id
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список уведомлений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationMessage'
+    post:
+      summary: Создать и отправить уведомление
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreate'
+            examples:
+              example-1:
+                value:
+                  recipient_id: "11111111-1111-1111-1111-111111111111"
+                  title: "Температурное уведомление"
+                  body: "Температура в доме выше 30°C"
+                  channel: "push"
+      responses:
+        '202':
+          description: Уведомление принято к отправке
+  /notifications/{id}:
+    get:
+      summary: Получить уведомление по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Уведомление
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationMessage'
+        '404':
+          description: Уведомление не найдено
+    patch:
+      summary: Обновить статус уведомления (например, пометить как delivered)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, sent, delivered, failed]
+      responses:
+        '200':
+          description: Обновлено
+components:
+  schemas:
+    NotificationCreate:
+      type: object
+      required:
+        - recipient_id
+        - title
+        - body
+      properties:
+        recipient_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        channel:
+          type: string
+          enum: [email, sms, push]
+        send_at:
+          type: string
+          format: date-time
+    NotificationMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipient_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        send_at:
+          type: string
+          format: date-time
+        sent_at:
+          type: string
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+        title:
+          type: string
+        body:
+          type: string
+        message_type_id:
+          type: integer
+        channel:
+          type: string
+        status:
+          type: string

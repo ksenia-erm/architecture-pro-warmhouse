@@ -1,0 +1,23 @@
+```puml
+@startuml
+title WarmHouse Context Diagram (monolith)
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Context.puml
+
+Person(user, "User", "Управляет отоплением и смотрит температуру через веб-интерфейс")
+Person(serviceEngineer, "Service Engineer", "Выездной технический специалист, подключает температурные датчики к системе")
+
+System_Boundary(warmhouse, "WarmHouse System") {
+    System(warmHouseSystem, "WarmHouse Monolith Application", "Монолит на Go + PostgreSQL")
+}
+
+System_Ext(sensor, "Temperature Sensors", "Температурные датчики в домах, подключены к системе")
+
+Rel(user, warmHouseSystem, "Использует для доступа к системе через WebUI")
+Rel(serviceEngineer, warmHouseSystem, "Добавляет и активирует датчики")
+Rel(warmHouseSystem, sensor, "Запрашивает температуру и управляет отоплением")
+
+@enduml
+```
