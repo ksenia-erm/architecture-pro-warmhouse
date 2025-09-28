@@ -80,9 +80,9 @@ services:
         condition: service_started
     environment:
       - DATABASE_URL=postgres://smarthome:smarthome@postgres:5432/smarthome
-      - TEMPERATURE_API_URL=http://api-gateway:8084/api/temperature
-      - TELEMETRY_API_URL=http://api-gateway:8084/api/telemetry
-      - DEVICE_API_URL=http://api-gateway:8084/api/device
+      - TEMPERATURE_API_URL=http://api-gateway:8084/api
+      - TELEMETRY_API_URL=http://api-gateway:8084/api
+      - DEVICE_API_URL=http://api-gateway:8084/api
     ports:
       - "8080:8080"
     restart: unless-stopped

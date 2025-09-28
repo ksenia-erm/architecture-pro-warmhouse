@@ -50,7 +50,27 @@ func NewAPIGateway() *APIGateway {
 
 // ProxyRequest proxies a request to the appropriate microservice
 func (gw *APIGateway) ProxyRequest(c *gin.Context) {
-	serviceName := c.Param("service")
+	// Extract service name from the URL path
+	path := c.Param("path")
+	pathParts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(pathParts) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Invalid path"})
+		return
+	}
+
+	// Determine service name based on the route that matched
+	var serviceName string
+	if strings.HasPrefix(c.Request.URL.Path, "/api/temperature") {
+		serviceName = "temperature"
+	} else if strings.HasPrefix(c.Request.URL.Path, "/api/device") {
+		serviceName = "device"
+	} else if strings.HasPrefix(c.Request.URL.Path, "/api/telemetry") {
+		serviceName = "telemetry"
+	} else {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Service not found"})
+		return
+	}
+
 	service, exists := gw.Services[serviceName]
 	if !exists {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Service not found"})
@@ -73,7 +93,18 @@ func (gw *APIGateway) ProxyRequest(c *gin.Context) {
 		originalDirector(req)
 		req.URL.Scheme = targetURL.Scheme
 		req.URL.Host = targetURL.Host
-		req.URL.Path = strings.TrimPrefix(req.URL.Path, "/api/"+serviceName)
+		// Handle different service path patterns
+		if serviceName == "temperature" {
+			// Temperature service expects /temperature/:id
+			req.URL.Path = "/" + serviceName + "/" + strings.TrimPrefix(path, "/")
+		} else {
+			// Other services expect /{serviceName} directly
+			if path == "" || path == "/" {
+				req.URL.Path = "/" + serviceName
+			} else {
+				req.URL.Path = "/" + serviceName + "/" + strings.TrimPrefix(path, "/")
+			}
+		}
 		req.Header.Set("X-Forwarded-For", c.ClientIP())
 		req.Header.Set("X-Forwarded-Proto", c.Request.Header.Get("X-Forwarded-Proto"))
 	}
